@@ -42,7 +42,7 @@ void showOrderSummary(MenuItem menu[], int order[], int itemCount)
   {
     if (order[i] > 0)
     {
-      cout << menu[i].name << " - " << menu[i].price << " x " << "$" << order[i] << " = $" << menu[i].price * order[i] << endl;
+      cout << menu[i].name << " - " << "$" << menu[i].price << " x " << order[i] << " = $" << menu[i].price * order[i] << endl;
       total += menu[i].price * order[i];
     }
   }
@@ -123,7 +123,6 @@ int main(void)
       cout << "Checking out..." << endl;
       showOrderSummary(menu, order, itemCount);
       cout << "Thank you for your order!";
-      break;
 
     case 5:
       system("@cls||clear");
