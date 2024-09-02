@@ -2,6 +2,7 @@
 #include <string>
 
 #define MAX_ITEM 10
+#define CATEGORY_COUNT 3
 
 using namespace std;
 
@@ -27,9 +28,36 @@ void displayMenu(MenuItem menu[], int itemCount)
   cin.get();
 }
 
+void displayMenuByCategory(MenuItem menu[], int itemCount, const string categories[], int itemCategories[])
+{
+  cout << "\n--- Hotel Menu by Categories ---" << endl;
+
+  for (int i = 0; i < CATEGORY_COUNT; ++i)
+  {
+    cout << endl
+         << categories[i] << ":\n";
+
+    for (int j = 0; j < itemCount; ++j)
+    {
+      if (itemCategories[j] == i)
+      {
+        cout << j + 1 << ". " << menu[j].name << " - " << menu[j].description << "($" << menu[j].price << ")" << endl;
+      }
+    }
+  }
+
+  cin.get();
+  cin.get();
+}
+
 void addToOrder(int order[], int itemIndex, int quantity)
 {
   order[itemIndex] += quantity;
+}
+
+void modifyOrder(int order[], int itemIndex, int quantity)
+{
+  order[itemIndex] = quantity;
 }
 
 void showOrderSummary(MenuItem menu[], int order[], int itemCount)
@@ -55,19 +83,18 @@ void showOrderSummary(MenuItem menu[], int order[], int itemCount)
 int main(void)
 {
   MenuItem menu[MAX_ITEM] = {
-      {"Burger", "Juicy ham burger", 8.99},
-      {"Fries", "Crispy fries", 2.99},
-      {"Soda", "Cold soda", 1.99},
-      {"Salad", "Fresh green salad", 4.99},
-      {"Sandwich", "Delicious sandwich", 7.99},
-      {"Pizza", "Hot pizza", 9.99},
-      {"Chicken", "Grilled chicken", 6.99},
+      {"Pizza", "Delicious cheese pizza", 9.99},
+      {"Burger", "Juicy beef burger", 6.99},
       {"Ice Cream", "Vanilla ice cream", 3.99},
-      {"Cake", "Moist chocolate cake", 5.99},
-      {"Bread", "Freshly baked bread", 1.99}};
+      {"Salad", "Fresh garden salad", 4.99},
+      {"Pasta", "Creamy Alfredo pasta", 7.99},
+      {"Coffee", "Hot brewed coffee", 2.99}};
 
   int order[MAX_ITEM] = {0};
-  int itemCount = 10;
+  int itemCount = 6;
+
+  string categories[CATEGORY_COUNT] = {"Main Course", "Desserts", "Beverages"};
+  int itemCategories[MAX_ITEM] = {0, 0, 1, 0, 0, 2};
 
   int choice;
 
@@ -76,10 +103,12 @@ int main(void)
     system("@cls||clear");
     cout << "Welcome to our Hotel Menu!" << endl
          << "1. Display Menu" << endl
-         << "2. Add to Order" << endl
-         << "3. View Order Summary" << endl
-         << "4. Checkout" << endl
-         << "5. Exit" << endl
+         << "2. Display Menu by Category" << endl
+         << "3. Add to Order" << endl
+         << "4. Modify Order" << endl
+         << "5. View Order Summary" << endl
+         << "6. Checkout" << endl
+         << "7. Exit" << endl
          << "Enter your choice: ";
     cin >> choice;
 
@@ -91,6 +120,11 @@ int main(void)
       break;
 
     case 2:
+      system("@cls||clear");
+      displayMenuByCategory(menu, itemCount, categories, itemCategories);
+      break;
+
+    case 3:
     {
       system("@cls||clear");
       int itemIndex, quantity;
@@ -113,18 +147,36 @@ int main(void)
       break;
     }
 
-    case 3:
+    case 4:
+    {
+      system("@cls||clear");
+      int itemIndex, quantity;
+
+      cout << "Enter the item number to modify: ";
+      cin >> itemIndex;
+
+      cout << "Enter the new quantity (enter 0 to remove): ";
+      cin >> quantity;
+
+      if (itemIndex > 0 && itemIndex <= itemCount && quantity >= 0)
+      {
+        modifyOrder(order, itemIndex - 1, quantity);
+      }
+      break;
+    }
+
+    case 5:
       system("@cls||clear");
       showOrderSummary(menu, order, itemCount);
       break;
 
-    case 4:
+    case 6:
       system("@cls||clear");
       cout << "Checking out..." << endl;
       showOrderSummary(menu, order, itemCount);
       cout << "Thank you for your order!";
 
-    case 5:
+    case 7:
       system("@cls||clear");
       cout << "Thank you for visiting!" << endl;
       cin.get();
@@ -139,7 +191,7 @@ int main(void)
       break;
     }
 
-  } while (choice != 5);
+  } while (choice != 7);
 
   return 0;
 }
