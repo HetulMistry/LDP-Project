@@ -1,2 +1,8 @@
 .vscode
+
+*.ii
+*.exe
+*.s
+*.o
+
 sample.cpp
