@@ -12,9 +12,45 @@ struct MenuItem
   double price;
 };
 
-void displayMenu() { cout << "DisplayMenu" << endl; }
-void addToOrder() { cout << "addToOrder" << endl; }
-void showOrderSummary() { cout << "showOrderSummary" << endl; }
+void displayMenu(MenuItem menu[], int itemCount)
+{
+  cout << "\n--- Hotel Menu ---" << endl;
+
+  for (int i = 0; i < itemCount; ++i)
+  {
+    {
+      cout << i + 1 << ". " << menu[i].name << " - " << menu[i].description << " ($" << menu[i].price << ")" << endl;
+    }
+  }
+
+  cin.get();
+  cin.get();
+}
+
+void addToOrder(int order[], int itemIndex, int quantity)
+{
+  order[itemIndex] += quantity;
+}
+
+void showOrderSummary(MenuItem menu[], int order[], int itemCount)
+{
+  cout << "\n--- Order Summary ---" << endl;
+
+  double total = 0.0;
+
+  for (int i = 0; i < itemCount; i++)
+  {
+    if (order[i] > 0)
+    {
+      cout << menu[i].name << " - " << menu[i].price << " x " << "$" << order[i] << " = $" << menu[i].price * order[i] << endl;
+      total += menu[i].price * order[i];
+    }
+  }
+  cout << "Total: $" << total << endl;
+
+  cin.get();
+  cin.get();
+}
 
 int main(void)
 {
@@ -30,12 +66,14 @@ int main(void)
       {"Cake", "Moist chocolate cake", 5.99},
       {"Bread", "Freshly baked bread", 1.99}};
 
+  int order[MAX_ITEM] = {0};
   int itemCount = 10;
 
   int choice;
 
   do
   {
+    system("@cls||clear");
     cout << "Welcome to our Hotel Menu!" << endl
          << "1. Display Menu" << endl
          << "2. Add to Order" << endl
@@ -48,11 +86,13 @@ int main(void)
     switch (choice)
     {
     case 1:
-      displayMenu();
+      system("@cls||clear");
+      displayMenu(menu, itemCount);
       break;
 
     case 2:
     {
+      system("@cls||clear");
       int itemIndex, quantity;
 
       cout << "Enter the item number to order: ";
@@ -63,7 +103,7 @@ int main(void)
 
       if (itemIndex > 0 && itemIndex <= itemCount && quantity > 0)
       {
-        addToOrder();
+        addToOrder(order, itemIndex - 1, quantity);
         cout << "Item added to your order." << endl;
       }
       else
@@ -74,19 +114,29 @@ int main(void)
     }
 
     case 3:
-      showOrderSummary();
+      system("@cls||clear");
+      showOrderSummary(menu, order, itemCount);
+      break;
 
     case 4:
+      system("@cls||clear");
       cout << "Checking out..." << endl;
-      showOrderSummary();
+      showOrderSummary(menu, order, itemCount);
       cout << "Thank you for your order!";
+      break;
 
     case 5:
+      system("@cls||clear");
       cout << "Thank you for visiting!" << endl;
+      cin.get();
+      cin.get();
       break;
 
     default:
+      system("@cls||clear");
       cout << "Invalid input, please try again." << endl;
+      cin.get();
+      cin.get();
       break;
     }
 
