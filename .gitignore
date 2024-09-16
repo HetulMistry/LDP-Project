@@ -1,5 +1,6 @@
 .vscode
 
+*.txt
 *.ii
 *.exe
 *.s
