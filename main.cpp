@@ -15,6 +15,12 @@ struct MenuItem
   int stock;
 };
 
+struct Order
+{
+  vector<int> itemQuantities;
+  double totalPrice;
+};
+
 void displayMenu(const vector<MenuItem> &menu)
 {
   cout << "\n--- Hotel Menu ---" << endl;
@@ -115,7 +121,7 @@ void restockInventory(vector<MenuItem> &menu)
 
   if (itemIndex > 0 && itemIndex <= static_cast<int>(menu.size()) && quantity > 0)
   {
-    menu[itemIndex - 1].stock += quantity; // Add stock to the item
+    menu[itemIndex - 1].stock += quantity;
     cout << "Restocked " << quantity << " units of " << menu[itemIndex - 1].name << "." << endl;
   }
   else
@@ -126,20 +132,26 @@ void restockInventory(vector<MenuItem> &menu)
   cin.get();
 }
 
-void saveOrderToFile(const vector<MenuItem> &menu, const vector<int> &order)
+void saveOrderToHistory(const vector<MenuItem> &menu, const vector<int> &order)
 {
-  ofstream orderFile("order.txt");
-  if (orderFile.is_open())
+  ofstream historyFile("order_history.txt", ios::app);
+
+  if (historyFile.is_open())
   {
+    historyFile << "\n--- New Order ---\n";
+    double total = 0.0;
     for (size_t i = 0; i < menu.size(); ++i)
     {
       if (order[i] > 0)
       {
-        orderFile << menu[i].name << " x " << order[i] << " = $" << menu[i].price * order[i] << "\n";
+        historyFile << i + 1 << " " << menu[i].name << " x " << order[i] << " = $" << menu[i].price * order[i] << "\n";
+        total += menu[i].price * order[i];
       }
     }
-    orderFile.close();
-    cout << "Order saved to file.\n";
+    historyFile << "Total: $" << total << "\n";
+    historyFile << "-------------------\n";
+    historyFile.close();
+    cout << "Order saved to history.\n";
   }
   else
   {
@@ -147,22 +159,104 @@ void saveOrderToFile(const vector<MenuItem> &menu, const vector<int> &order)
   }
 }
 
-void loadOrderFromFile()
+void loadOrderHistory()
 {
-  ifstream orderFile("order.txt");
+  ifstream historyFile("order_history.txt");
   string line;
-  if (orderFile.is_open())
+  if (historyFile.is_open())
   {
-    cout << "\n--- Loaded Order ---\n";
-    while (getline(orderFile, line))
+    cout << "\n--- Order History ---\n";
+    while (getline(historyFile, line))
     {
       cout << line << endl;
     }
-    orderFile.close();
+    historyFile.close();
   }
   else
   {
-    cout << "No saved order found.\n";
+    cout << "No order history found.\n";
+  }
+  cin.get();
+  cin.get();
+}
+
+void loadSpecificOrder(vector<int> &order, vector<MenuItem> &menu)
+{
+  ifstream historyFile("order_history.txt");
+  if (!historyFile.is_open())
+  {
+    cout << "No order history found.\n";
+    return;
+  }
+
+  int orderIndex;
+  cout << "Enter the order number to load (e.g., 1 for first order): ";
+  cin >> orderIndex;
+
+  string line;
+  int currentOrderIndex = 0;
+  bool orderFound = false;
+
+  while (getline(historyFile, line))
+  {
+    if (line.find("--- New Order ---") != string::npos)
+    {
+      currentOrderIndex++;
+      if (currentOrderIndex == orderIndex)
+      {
+        orderFound = true;
+        break;
+      }
+    }
+  }
+
+  if (!orderFound)
+  {
+    cout << "Order not found.\n";
+    historyFile.close();
+    return;
+  }
+
+  // Reset the current order quantities
+  fill(order.begin(), order.end(), 0);
+
+  // Now read the specific order details
+  while (getline(historyFile, line) && line.find("Total:") == string::npos)
+  {
+    int itemIndex = 0, quantity = 0;
+    string itemName;
+
+    // Split line into parts and extract the item index and quantity
+    size_t firstSpace = line.find(' ');
+    size_t xPos = line.find('x');
+
+    if (firstSpace != string::npos && xPos != string::npos)
+    {
+      itemIndex = stoi(line.substr(0, firstSpace)) - 1;
+      quantity = stoi(line.substr(xPos + 1));
+
+      if (itemIndex >= 0 && itemIndex < static_cast<int>(menu.size()))
+      {
+        order[itemIndex] = quantity; // Update the order array with the quantities
+      }
+    }
+  }
+
+  cout << "Order loaded successfully. You can now modify or checkout.\n";
+  historyFile.close();
+}
+
+void clearOrderHistory()
+{
+  ofstream historyFile("order_history.txt", ios::trunc);
+  if (historyFile.is_open())
+  {
+    historyFile.close();
+    cout << "Order history cleared.\n";
+  }
+  else
+  {
+    cout << "Unable to clear order history.\n";
   }
   cin.get();
   cin.get();
@@ -194,11 +288,13 @@ int main(void)
          << "3. Add to Order" << endl
          << "4. Modify Order" << endl
          << "5. View Order Summary" << endl
-         << "6. Save Order to File" << endl
-         << "7. Load Previous Order" << endl
-         << "8. Restock Inventory" << endl
-         << "9. Checkout" << endl
-         << "10. Exit" << endl
+         << "6. Save Order to History" << endl
+         << "7. View Order History" << endl
+         << "8. Clear Order History" << endl
+         << "9. Restock Inventory" << endl
+         << "10. Load Previous Order" << endl
+         << "11. Checkout" << endl
+         << "12. Exit" << endl
          << "Enter your choice: ";
     cin >> choice;
 
@@ -257,26 +353,37 @@ int main(void)
 
     case 6:
       system("@cls||clear");
-      saveOrderToFile(menu, order);
+      saveOrderToHistory(menu, order);
       break;
 
     case 7:
       system("@cls||clear");
-      loadOrderFromFile();
+      loadOrderHistory();
       break;
 
     case 8:
       system("@cls||clear");
-      restockInventory(menu);
+      clearOrderHistory();
       break;
 
     case 9:
       system("@cls||clear");
-      cout << "Checking out..." << endl;
-      showOrderSummary(menu, order);
-      cout << "Thank you for your order!" << endl;
+      restockInventory(menu);
+      break;
 
     case 10:
+      system("@cls||clear");
+      loadSpecificOrder(order, menu);
+      break;
+
+    case 11:
+      system("@cls||clear");
+      cout << "Checking out..." << endl;
+      showOrderSummary(menu, order);
+      saveOrderToHistory(menu, order);
+      cout << "Thank you for your order!" << endl;
+
+    case 12:
       system("@cls||clear");
       cout << "Thank you for visiting!" << endl;
       cin.get();
@@ -291,7 +398,7 @@ int main(void)
       break;
     }
 
-  } while (choice != 10);
+  } while (choice != 12);
 
   return 0;
 }
