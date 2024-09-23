@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <iomanip>
 
 #define CATEGORY_COUNT 3
 
@@ -15,20 +16,27 @@ struct MenuItem
   int stock;
 };
 
-struct Order
-{
-  vector<int> itemQuantities;
-  double totalPrice;
-};
+void displayMenu(const vector<MenuItem> &menu);
+void displayMenuByCategory(const vector<MenuItem> &menu, const vector<int> &itemCategories, const vector<string> &categories);
+void addToOrder(vector<int> &order, const vector<MenuItem> &menu, int itemIndex, int quantity);
+void modifyOrder(vector<int> &order, int itemIndex, int quantity, const vector<MenuItem> &menu);
+void showOrderSummary(const vector<MenuItem> &menu, const vector<int> &order);
+void saveOrderToHistory(const vector<MenuItem> &menu, const vector<int> &order);
+void loadOrderHistory();
+void clearOrderHistory();
+void restockInventory(vector<MenuItem> &menu);
+void loadSpecificOrder(vector<int> &order, vector<MenuItem> &menu);
 
 void displayMenu(const vector<MenuItem> &menu)
 {
   cout << "\n--- Hotel Menu ---" << endl;
+
   for (size_t i = 0; i < menu.size(); ++i)
   {
-    cout << i + 1 << ". " << menu[i].name << " - " << menu[i].description << " ($" << menu[i].price << ")"
-         << " [Stock: " << menu[i].stock << "]" << endl;
+    cout << i + 1 << ". " << menu[i].name << " - " << menu[i].description
+         << " ($" << menu[i].price << ") [Stock: " << menu[i].stock << "]" << endl;
   }
+
   cin.get();
   cin.get();
 }
@@ -36,64 +44,56 @@ void displayMenu(const vector<MenuItem> &menu)
 void displayMenuByCategory(const vector<MenuItem> &menu, const vector<int> &itemCategories, const vector<string> &categories)
 {
   cout << "\n--- Hotel Menu by Categories ---" << endl;
+
   for (int i = 0; i < CATEGORY_COUNT; ++i)
   {
     cout << endl
          << categories[i] << ":\n";
+
     for (size_t j = 0; j < menu.size(); ++j)
     {
       if (itemCategories[j] == i)
       {
-        cout << j + 1 << ". " << menu[j].name << " - " << menu[j].description << " ($" << menu[j].price << ")"
-             << " [Stock: " << menu[j].stock << "]" << endl;
+        cout << j + 1 << ". " << menu[j].name << " - " << menu[j].description
+             << "($" << menu[j].price << ") [Stock: " << menu[j].stock << "]" << endl;
       }
     }
   }
+
   cin.get();
   cin.get();
 }
 
-void addToOrder(vector<int> &order, vector<MenuItem> &menu, int itemIndex, int quantity)
+void addToOrder(vector<int> &order, const vector<MenuItem> &menu, int itemIndex, int quantity)
 {
   if (menu[itemIndex].stock >= quantity)
   {
     order[itemIndex] += quantity;
-    menu[itemIndex].stock -= quantity;
-    cout << "Item added to your order." << endl;
+    cout << "Added " << quantity << "x " << menu[itemIndex].name << " to your order." << endl;
   }
   else
   {
-    cout << "Sorry, we only have " << menu[itemIndex].stock << " units of " << menu[itemIndex].name << " in stock." << endl;
+    cout << "Sorry, not enough stock available." << endl;
   }
 }
 
-void modifyOrder(vector<int> &order, int itemIndex, int quantity, vector<MenuItem> &menu)
+void modifyOrder(vector<int> &order, int itemIndex, int quantity, const vector<MenuItem> &menu)
 {
-  int currentQuantity = order[itemIndex];
-  int difference = quantity - currentQuantity;
-
-  if (difference > 0)
+  if (menu[itemIndex].stock >= quantity)
   {
-    if (menu[itemIndex].stock >= difference)
-    {
-      order[itemIndex] = quantity;
-      menu[itemIndex].stock -= difference;
-    }
-    else
-    {
-      cout << "Sorry, we only have " << menu[itemIndex].stock << " units of " << menu[itemIndex].name << " in stock." << endl;
-    }
+    order[itemIndex] = quantity;
+    cout << "Order updated." << endl;
   }
   else
   {
-    order[itemIndex] = quantity;
-    menu[itemIndex].stock -= difference;
+    cout << "Sorry, not enough stock available." << endl;
   }
 }
 
 void showOrderSummary(const vector<MenuItem> &menu, const vector<int> &order)
 {
   cout << "\n--- Order Summary ---" << endl;
+
   double total = 0.0;
 
   for (size_t i = 0; i < menu.size(); i++)
@@ -104,30 +104,9 @@ void showOrderSummary(const vector<MenuItem> &menu, const vector<int> &order)
       total += menu[i].price * order[i];
     }
   }
+
   cout << "Total: $" << total << endl;
-  cin.get();
-  cin.get();
-}
 
-void restockInventory(vector<MenuItem> &menu)
-{
-  system("@cls||clear");
-  int itemIndex, quantity;
-
-  cout << "Enter the item number to restock: ";
-  cin >> itemIndex;
-  cout << "Enter the quantity to restock: ";
-  cin >> quantity;
-
-  if (itemIndex > 0 && itemIndex <= static_cast<int>(menu.size()) && quantity > 0)
-  {
-    menu[itemIndex - 1].stock += quantity;
-    cout << "Restocked " << quantity << " units of " << menu[itemIndex - 1].name << "." << endl;
-  }
-  else
-  {
-    cout << "Invalid input." << endl;
-  }
   cin.get();
   cin.get();
 }
@@ -136,48 +115,88 @@ void saveOrderToHistory(const vector<MenuItem> &menu, const vector<int> &order)
 {
   ofstream historyFile("order_history.txt", ios::app);
 
-  if (historyFile.is_open())
+  historyFile << "--- New Order ---\n";
+
+  double total = 0.0;
+
+  for (size_t i = 0; i < menu.size(); ++i)
   {
-    historyFile << "\n--- New Order ---\n";
-    double total = 0.0;
-    for (size_t i = 0; i < menu.size(); ++i)
+    if (order[i] > 0)
     {
-      if (order[i] > 0)
-      {
-        historyFile << i + 1 << " " << menu[i].name << " x " << order[i] << " = $" << menu[i].price * order[i] << "\n";
-        total += menu[i].price * order[i];
-      }
+      historyFile << i + 1 << ". " << menu[i].name << " x " << order[i] << " = $" << menu[i].price * order[i] << "\n";
+      total += menu[i].price * order[i];
     }
-    historyFile << "Total: $" << total << "\n";
-    historyFile << "-------------------\n";
-    historyFile.close();
-    cout << "Order saved to history.\n";
   }
-  else
-  {
-    cout << "Unable to save the order.\n";
-  }
+
+  historyFile << "Total: $" << total << "\n\n";
+  historyFile.close();
+
+  cout << "Order saved to history.\n";
 }
 
 void loadOrderHistory()
 {
   ifstream historyFile("order_history.txt");
-  string line;
-  if (historyFile.is_open())
-  {
-    cout << "\n--- Order History ---\n";
-    while (getline(historyFile, line))
-    {
-      cout << line << endl;
-    }
-    historyFile.close();
-  }
-  else
+
+  if (!historyFile.is_open())
   {
     cout << "No order history found.\n";
+    return;
   }
+
+  string line;
+
+  while (getline(historyFile, line))
+  {
+    cout << line << endl;
+  }
+
+  historyFile.close();
+}
+
+void viewOrderHistory()
+{
+  ifstream historyFile("order_history.txt");
+
+  if (!historyFile.is_open())
+  {
+    cout << "No order history found or the file could not be opened.\n";
+    return;
+  }
+
+  string line;
+  cout << "\n--- Order History ---\n";
+
+  while (getline(historyFile, line))
+  {
+    cout << line << endl;
+  }
+
+  historyFile.close();
+  cout << "\nEnd of Order History.\n";
+
   cin.get();
   cin.get();
+}
+
+void clearOrderHistory()
+{
+  ofstream historyFile("order_history.txt", ios::trunc);
+
+  historyFile.close();
+
+  cout << "Order history cleared.\n";
+}
+
+void restockInventory(vector<MenuItem> &menu)
+{
+  for (auto &item : menu)
+  {
+    cout << "Enter new stock for " << item.name << ": ";
+    cin >> item.stock;
+  }
+
+  cout << "Inventory restocked.\n";
 }
 
 void loadSpecificOrder(vector<int> &order, vector<MenuItem> &menu)
@@ -185,79 +204,62 @@ void loadSpecificOrder(vector<int> &order, vector<MenuItem> &menu)
   ifstream historyFile("order_history.txt");
   if (!historyFile.is_open())
   {
-    cout << "No order history found.\n";
+    cout << "No order history found or the file could not be opened.\n";
     return;
   }
 
-  int orderIndex;
-  cout << "Enter the order number to load (e.g., 1 for first order): ";
-  cin >> orderIndex;
-
+  vector<string> orderLines;
   string line;
-  int currentOrderIndex = 0;
-  bool orderFound = false;
+  int orderCount = 0;
 
+  cout << "\n--- Available Orders ---\n";
   while (getline(historyFile, line))
   {
-    if (line.find("--- New Order ---") != string::npos)
+    if (line.find("Total") == string::npos)
     {
-      currentOrderIndex++;
-      if (currentOrderIndex == orderIndex)
-      {
-        orderFound = true;
-        break;
-      }
+      cout << ++orderCount << ": " << line << endl;
+      orderLines.push_back(line);
     }
   }
 
-  if (!orderFound)
+  if (orderCount == 0)
   {
-    cout << "Order not found.\n";
+    cout << "No previous orders found.\n";
     historyFile.close();
     return;
   }
 
-  // Reset the current order quantities
-  fill(order.begin(), order.end(), 0);
+  int selectedOrder;
 
-  // Now read the specific order details
-  while (getline(historyFile, line) && line.find("Total:") == string::npos)
+  cout << "\nSelect an order to load (1 to " << orderCount << "): ";
+  cin >> selectedOrder;
+
+  if (selectedOrder < 1 || selectedOrder > orderCount)
   {
-    int itemIndex = 0, quantity = 0;
-    string itemName;
+    cout << "Invalid selection.\n";
+    historyFile.close();
 
-    // Split line into parts and extract the item index and quantity
-    size_t firstSpace = line.find(' ');
-    size_t xPos = line.find('x');
-
-    if (firstSpace != string::npos && xPos != string::npos)
-    {
-      itemIndex = stoi(line.substr(0, firstSpace)) - 1;
-      quantity = stoi(line.substr(xPos + 1));
-
-      if (itemIndex >= 0 && itemIndex < static_cast<int>(menu.size()))
-      {
-        order[itemIndex] = quantity; // Update the order array with the quantities
-      }
-    }
+    return;
   }
 
-  cout << "Order loaded successfully. You can now modify or checkout.\n";
-  historyFile.close();
-}
+  string selectedOrderLine = orderLines[selectedOrder - 1];
+  int itemIndex, quantity;
 
-void clearOrderHistory()
-{
-  ofstream historyFile("order_history.txt", ios::trunc);
-  if (historyFile.is_open())
+  sscanf(selectedOrderLine.c_str(), "%*s x %d", &quantity);
+
+  itemIndex = selectedOrder - 1;
+
+  if (itemIndex >= 0 && itemIndex < static_cast<int>(menu.size()))
   {
-    historyFile.close();
-    cout << "Order history cleared.\n";
+    order[itemIndex] = quantity;
+    cout << "Order for " << menu[itemIndex].name << " loaded successfully.\n";
   }
   else
   {
-    cout << "Unable to clear order history.\n";
+    cout << "Error: Invalid item index.\n";
   }
+
+  historyFile.close();
   cin.get();
   cin.get();
 }
@@ -266,11 +268,11 @@ int main(void)
 {
   vector<MenuItem> menu = {
       {"Pizza", "Delicious cheese pizza", 9.99, 10},
-      {"Burger", "Juicy beef burger", 6.99, 8},
-      {"Ice Cream", "Vanilla ice cream", 3.99, 5},
-      {"Salad", "Fresh garden salad", 4.99, 12},
-      {"Pasta", "Creamy Alfredo pasta", 7.99, 7},
-      {"Coffee", "Hot brewed coffee", 2.99, 15}};
+      {"Burger", "Juicy beef burger", 6.99, 10},
+      {"Ice Cream", "Vanilla ice cream", 3.99, 10},
+      {"Salad", "Fresh garden salad", 4.99, 10},
+      {"Pasta", "Creamy Alfredo pasta", 7.99, 10},
+      {"Coffee", "Hot brewed coffee", 2.99, 10}};
 
   vector<int> order(menu.size(), 0);
 
@@ -314,8 +316,10 @@ int main(void)
     {
       system("@cls||clear");
       int itemIndex, quantity;
+
       cout << "Enter the item number to order: ";
       cin >> itemIndex;
+
       cout << "Enter the quantity: ";
       cin >> quantity;
 
@@ -334,6 +338,7 @@ int main(void)
     {
       system("@cls||clear");
       int itemIndex, quantity;
+
       cout << "Enter the item number to modify: ";
       cin >> itemIndex;
       cout << "Enter the new quantity (enter 0 to remove): ";
@@ -358,7 +363,7 @@ int main(void)
 
     case 7:
       system("@cls||clear");
-      loadOrderHistory();
+      viewOrderHistory();
       break;
 
     case 8:
@@ -380,7 +385,7 @@ int main(void)
       system("@cls||clear");
       cout << "Checking out..." << endl;
       showOrderSummary(menu, order);
-      saveOrderToHistory(menu, order);
+
       cout << "Thank you for your order!" << endl;
 
     case 12:
